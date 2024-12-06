@@ -1,0 +1,99 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'de.infolektuell.jextract' version '1.4.0'
+}
+
+group = 'io.github.notstirred'
+version = '0.1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+def cmakeLists = new File(projectDir, "CMakeLists.txt")
+def nativesBuildDir = layout.buildDirectory.dir("nativesBuild")
+tasks.register("configureNatives", Exec) {
+    // Using FetchContent so the entire input is captured within CMakeLists
+    inputs.file(cmakeLists)
+    outputs.dir(nativesBuildDir)
+
+    commandLine "cmake", "-DCMAKE_BUILD_TYPE=Debug", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
+}
+tasks.register("buildNatives", Exec) {
+    dependsOn(tasks.named("configureNatives"))
+    // not depending on configureNatives as the only time it changes is when CMakeLists does.
+    // Using FetchContent so the entire input is captured within CMakeLists
+    inputs.file(cmakeLists)
+    outputs.file(layout.buildDirectory.file("nativesBuild/libleveldb_ffi.so"))
+
+    commandLine "cmake", "--build", nativesBuildDir.get().asFile
+}
+
+def copyNativesTask = tasks.register("copyNatives", Copy) {
+    from tasks.named("buildNatives")
+    into temporaryDir.toPath().resolve("io/github/notstirred/leveldb_ffi/natives/linux/x86_64/")
+}
+
+jextract.libraries {
+    def levelDBBindings = register('levelDB') {
+        def buildDir = nativesBuildDir.get().asFile.toString()
+        includes.add(layout.projectDirectory.dir("native/include"))
+        // don't like relying on unstable(?) cmake internals.
+        includes.add(layout.projectDirectory.dir("$buildDir/_deps/leveldb-src/include/"))
+        header = layout.projectDirectory.file("native/include/leveldb_ffi/c.h")
+        headerClassName = "c_h"
+        targetPackage = "io.github.notstirred.leveldb_ffi.ffi"
+    }
+    sourceSets.main {
+        jextract.libraries.addLater(levelDBBindings)
+    }
+}
+tasks.named("generateLevelDBBindings") {
+    dependsOn(tasks.named("buildNatives"))
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir(copyNativesTask.map { it.temporaryDir })
+        }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(22)
+    }
+
+    withJavadocJar()
+    withSourcesJar()
+}
+
+tasks.named("sourcesJar", Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+test {
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = group
+            artifactId = rootProject.name
+            version = version
+
+            artifact jar
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+}
+
