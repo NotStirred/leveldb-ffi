@@ -32,7 +32,13 @@ public class Options extends Scoped {
     }
 
     public void setParanoidChecks(boolean paranoidChecks) {
+        this.alive();
         leveldb_options_set_paranoid_checks(this.seg, (byte) (paranoidChecks ? 1 : 0));
+    }
+
+    public void setFilterPolicy(FilterPolicy filterPolicy) {
+        this.alive();
+        leveldb_options_set_filter_policy(this.seg, filterPolicy.seg);
     }
 
     //FIXME
