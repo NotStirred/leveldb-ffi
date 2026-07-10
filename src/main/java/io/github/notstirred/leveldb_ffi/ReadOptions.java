@@ -13,18 +13,18 @@ public class ReadOptions extends Scoped {
     }
 
     public static ReadOptions create(Arena arena) {
-        MemorySegment memorySegment = leveldb_readoptions_create().reinterpret(arena, c_h::leveldb_readoptions_destroy);
+        MemorySegment memorySegment = leveldb_ffi_readoptions_create().reinterpret(arena, c_h::leveldb_ffi_readoptions_destroy);
         return new ReadOptions(memorySegment);
     }
 
     public void setVerifyChecksums(boolean verifyChecksums) {
         this.alive();
-        leveldb_readoptions_set_verify_checksums(this.seg, (byte) (verifyChecksums ? 1 : 0));
+        leveldb_ffi_readoptions_set_verify_checksums(this.seg, (byte) (verifyChecksums ? 1 : 0));
     }
 
     public void setFillCache(boolean fillCache) {
         this.alive();
-        leveldb_readoptions_set_fill_cache(this.seg, (byte) (fillCache ? 1 : 0));
+        leveldb_ffi_readoptions_set_fill_cache(this.seg, (byte) (fillCache ? 1 : 0));
     }
 
     //FIXME

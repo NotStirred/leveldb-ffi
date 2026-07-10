@@ -12,7 +12,7 @@ public class FilterPolicy extends Scoped {
     }
 
     public static FilterPolicy newBloomFilterPolicy(Arena arena, int bitsPerKey) {
-        MemorySegment memorySegment = c_h.leveldb_filterpolicy_create_bloom(bitsPerKey).reinterpret(arena, c_h::leveldb_readoptions_destroy);
+        MemorySegment memorySegment = c_h.leveldb_ffi_filterpolicy_create_bloom(bitsPerKey).reinterpret(arena, c_h::leveldb_ffi_readoptions_destroy);
         return new FilterPolicy(memorySegment);
     }
 }

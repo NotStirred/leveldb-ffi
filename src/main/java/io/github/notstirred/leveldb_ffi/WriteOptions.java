@@ -5,8 +5,8 @@ import io.github.notstirred.leveldb_ffi.ffi.c_h;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 
-import static io.github.notstirred.leveldb_ffi.ffi.c_h.leveldb_writeoptions_create;
-import static io.github.notstirred.leveldb_ffi.ffi.c_h.leveldb_writeoptions_set_sync;
+import static io.github.notstirred.leveldb_ffi.ffi.c_h.leveldb_ffi_writeoptions_create;
+import static io.github.notstirred.leveldb_ffi.ffi.c_h.leveldb_ffi_writeoptions_set_sync;
 
 public class WriteOptions extends Scoped {
     MemorySegment seg;
@@ -16,12 +16,12 @@ public class WriteOptions extends Scoped {
     }
 
     public static WriteOptions create(Arena arena) {
-        MemorySegment memorySegment = leveldb_writeoptions_create().reinterpret(arena, c_h::leveldb_writeoptions_destroy);
+        MemorySegment memorySegment = leveldb_ffi_writeoptions_create().reinterpret(arena, c_h::leveldb_ffi_writeoptions_destroy);
         return new WriteOptions(memorySegment);
     }
 
     public void setSync(boolean sync) {
         this.alive();
-        leveldb_writeoptions_set_sync(this.seg, (byte) (sync ? 1 : 0));
+        leveldb_ffi_writeoptions_set_sync(this.seg, (byte) (sync ? 1 : 0));
     }
 }

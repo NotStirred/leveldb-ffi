@@ -23,11 +23,11 @@ public class LevelDB extends Scoped implements AutoCloseable {
     }
 
     public static int majorVersion() {
-        return leveldb_major_version();
+        return leveldb_ffi_major_version();
     }
 
     public static int minorVersion() {
-        return leveldb_minor_version();
+        return leveldb_ffi_minor_version();
     }
 
     /**
@@ -42,8 +42,8 @@ public class LevelDB extends Scoped implements AutoCloseable {
         try (Arena tempArena = Arena.ofConfined()) {
             MemorySegment errSeg = tempArena.allocate(ValueLayout.ADDRESS);
 
-            MemorySegment db = leveldb_open(options.seg, tempArena.allocateFrom(name), errSeg)
-                    .reinterpret(arena, c_h::leveldb_close);
+            MemorySegment db = leveldb_ffi_open(options.seg, tempArena.allocateFrom(name), errSeg)
+                    .reinterpret(arena, c_h::leveldb_ffi_close);
 
             throwErrorIfPresent(tempArena, errSeg);
             // no error, return the db
@@ -53,7 +53,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
 
     public LevelDBIterator createIterator(ReadOptions options) {
         this.alive();
-        LevelDBIterator iter = LevelDBIterator.create(leveldb_create_iterator(this.seg, options.seg));
+        LevelDBIterator iter = LevelDBIterator.create(leveldb_ffi_create_iterator(this.seg, options.seg));
         iter.seekToFirst0();
         return iter;
     }
@@ -65,7 +65,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
             MemorySegment valSeg = tempArena.allocateFrom(val);
             MemorySegment errSeg = tempArena.allocate(ValueLayout.ADDRESS);
 
-            leveldb_put(this.seg, options.seg, keySeg, keySeg.byteSize(), valSeg, valSeg.byteSize(), errSeg);
+            leveldb_ffi_put(this.seg, options.seg, keySeg, keySeg.byteSize(), valSeg, valSeg.byteSize(), errSeg);
 
             throwErrorIfPresent(tempArena, errSeg);
         }
@@ -78,7 +78,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
             MemorySegment valLenSeg = tempArena.allocate(ValueLayout.JAVA_LONG);
             MemorySegment errSeg = tempArena.allocate(ValueLayout.ADDRESS);
 
-            MemorySegment valSeg = leveldb_get(this.seg, options.seg, keySeg, keySeg.byteSize(), valLenSeg, errSeg);
+            MemorySegment valSeg = leveldb_ffi_get(this.seg, options.seg, keySeg, keySeg.byteSize(), valLenSeg, errSeg);
             if (valSeg.address() == 0) {
                 return Optional.empty();
             }
@@ -102,7 +102,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
         MemorySegment errStr = errSeg.get(ValueLayout.ADDRESS, 0);
         if (errStr.address() != 0) { // error exists, throw
             // Null terminated string, so we read until \0, hence Long.MAX_VALUE
-            errStr = errStr.reinterpret(Long.MAX_VALUE, arena, c_h::leveldb_free);
+            errStr = errStr.reinterpret(Long.MAX_VALUE, arena, c_h::leveldb_ffi_free);
             String string = errStr.getString(0);
             throw new LevelDBException(string);
         }
@@ -110,6 +110,6 @@ public class LevelDB extends Scoped implements AutoCloseable {
 
     @Override
     public void close() {
-        leveldb_close(this.seg);
+        leveldb_ffi_close(this.seg);
     }
 }

@@ -27,8 +27,15 @@ FetchContent_MakeAvailable(leveldb)
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
-add_library(leveldb_ffi SHARED)
+add_library(leveldb_ffi SHARED
+        native/include/leveldb_ffi/c.h
+        native/src/c.cc
+)
 set_target_properties(leveldb_ffi PROPERTIES LINKER_LANGUAGE C)
+
+target_include_directories(leveldb_ffi PUBLIC
+        native/include
+)
 target_link_libraries(leveldb_ffi PRIVATE zlibstatic)
 target_link_libraries(leveldb_ffi PUBLIC leveldb)
 
