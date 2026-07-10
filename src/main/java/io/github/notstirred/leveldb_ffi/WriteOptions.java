@@ -15,10 +15,6 @@ public class WriteOptions extends Scoped {
         super(optionsSeg);
     }
 
-    public static WriteOptions create() {
-        return create(FFI.AUTO_ARENA);
-    }
-
     public static WriteOptions create(Arena arena) {
         MemorySegment memorySegment = leveldb_writeoptions_create().reinterpret(arena, c_h::leveldb_writeoptions_destroy);
         return new WriteOptions(memorySegment);

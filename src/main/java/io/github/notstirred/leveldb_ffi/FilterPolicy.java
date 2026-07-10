@@ -11,10 +11,6 @@ public class FilterPolicy extends Scoped {
         super(memorySegment);
     }
 
-    public static FilterPolicy newBloomFilterPolicy(int bitsPerKey) {
-        return newBloomFilterPolicy(FFI.AUTO_ARENA, bitsPerKey);
-    }
-
     public static FilterPolicy newBloomFilterPolicy(Arena arena, int bitsPerKey) {
         MemorySegment memorySegment = c_h.leveldb_filterpolicy_create_bloom(bitsPerKey).reinterpret(arena, c_h::leveldb_readoptions_destroy);
         return new FilterPolicy(memorySegment);

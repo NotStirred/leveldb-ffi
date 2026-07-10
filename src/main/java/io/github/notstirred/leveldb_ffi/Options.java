@@ -12,10 +12,6 @@ public class Options extends Scoped {
         super(optionsSeg);
     }
 
-    public static Options create() {
-        return create(FFI.AUTO_ARENA);
-    }
-
     public static Options create(Arena arena) {
         MemorySegment memorySegment = leveldb_options_create().reinterpret(arena, c_h::leveldb_options_destroy);
         return new Options(memorySegment);

@@ -12,10 +12,6 @@ public class ReadOptions extends Scoped {
         super(optionsSeg);
     }
 
-    public static ReadOptions create() {
-        return create(FFI.AUTO_ARENA);
-    }
-
     public static ReadOptions create(Arena arena) {
         MemorySegment memorySegment = leveldb_readoptions_create().reinterpret(arena, c_h::leveldb_readoptions_destroy);
         return new ReadOptions(memorySegment);

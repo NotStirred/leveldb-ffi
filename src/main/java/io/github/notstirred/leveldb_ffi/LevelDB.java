@@ -11,9 +11,15 @@ import java.util.Optional;
 import static io.github.notstirred.leveldb_ffi.ffi.c_h.*;
 
 public class LevelDB extends Scoped implements AutoCloseable {
+    /**
+     * The values <u>inside</u> {@link Options} must outlive the db, so just hold onto it.
+     */
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
+    private final Options options;
 
-    private LevelDB(MemorySegment dbSeg) {
+    private LevelDB(MemorySegment dbSeg, Options options) {
         super(dbSeg);
+        this.options = options;
     }
 
     public static int majorVersion() {
@@ -24,22 +30,30 @@ public class LevelDB extends Scoped implements AutoCloseable {
         return leveldb_minor_version();
     }
 
-    public static LevelDB open(Options options, String name) throws LevelDBException {
+    /**
+     *
+     * @param arena   The arena in which to allocate the DB, <b>must</b> outlive closure of the returned db.
+     * @param options The db options, which <b>must</b> outlive the closure of the returned db.
+     * @param name    The path to the db
+     * @return The opened db
+     * @throws LevelDBException
+     */
+    public static LevelDB open(Arena arena, Options options, String name) throws LevelDBException {
         try (Arena tempArena = Arena.ofConfined()) {
             MemorySegment errSeg = tempArena.allocate(ValueLayout.ADDRESS);
 
             MemorySegment db = leveldb_open(options.seg, tempArena.allocateFrom(name), errSeg)
-                    .reinterpret(FFI.AUTO_ARENA, c_h::leveldb_close);
+                    .reinterpret(arena, c_h::leveldb_close);
 
             throwErrorIfPresent(tempArena, errSeg);
             // no error, return the db
-            return new LevelDB(db);
+            return new LevelDB(db, options);
         }
     }
 
     public LevelDBIterator createIterator(ReadOptions options) {
         this.alive();
-        LevelDBIterator iter = LevelDBIterator.create(leveldb_create_iterator(this.seg, options.seg).reinterpret(FFI.AUTO_ARENA, c_h::leveldb_iter_destroy));
+        LevelDBIterator iter = LevelDBIterator.create(leveldb_create_iterator(this.seg, options.seg));
         iter.seekToFirst0();
         return iter;
     }
@@ -68,7 +82,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
             if (valSeg.address() == 0) {
                 return Optional.empty();
             }
-            valSeg = valSeg.reinterpret(valLenSeg.get(ValueLayout.JAVA_LONG, 0));
+            valSeg = valSeg.reinterpret(valLenSeg.get(ValueLayout.JAVA_LONG, 0)); // TODO: , tempArena, c_h::leveldb_free);
 
             throwErrorIfPresent(tempArena, errSeg);
 
@@ -76,7 +90,6 @@ public class LevelDB extends Scoped implements AutoCloseable {
             byte[] val = new byte[valBuf.remaining()];
             valBuf.get(val);
 
-            leveldb_free(valSeg);
             return Optional.of(val);
         }
     }
