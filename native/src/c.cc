@@ -2,8 +2,7 @@
 #include <atomic>
 #include <leveldb/c.h>
 #include <leveldb_ffi/c.h>
-
-#include <string.h>
+#include <leveldb_ffi/no_throw.h>
 
 const char *EXCEPTION_THROWN_MESSAGE =
     "An exception was thrown in LevelDB. The FFI has disabled itself in an attempt to save the DB";
@@ -11,50 +10,6 @@ const char *EXCEPTION_THROWN_MESSAGE =
 /// Once an exception is thrown all methods in the ABI will do nothing, or return a default value.
 /// LevelDB does not throw or handle exceptions in any way, as such the DB will be in an unknown state after any throw.
 std::atomic_bool exception_thrown{false};
-
-#define NO_THROW(action)                                                                                               \
-  try {                                                                                                                \
-    if (!exception_thrown) {                                                                                           \
-      action;                                                                                                          \
-    }                                                                                                                  \
-  } catch (...) {                                                                                                      \
-    exception_thrown = true;                                                                                           \
-  }
-
-#define NO_THROW_ERR(action)                                                                                           \
-  try {                                                                                                                \
-    if (!exception_thrown) {                                                                                           \
-      action;                                                                                                          \
-    }                                                                                                                  \
-  } catch (...) {                                                                                                      \
-    exception_thrown = true;                                                                                           \
-    if (*errptr == nullptr) {                                                                                          \
-      *errptr = strdup(EXCEPTION_THROWN_MESSAGE);                                                                      \
-    }                                                                                                                  \
-  }
-
-#define RET_NOTHROW(action, default_return)                                                                            \
-  try {                                                                                                                \
-    if (!exception_thrown) {                                                                                           \
-      return action;                                                                                                   \
-    }                                                                                                                  \
-  } catch (...) {                                                                                                      \
-    exception_thrown = true;                                                                                           \
-  }                                                                                                                    \
-  return default_return;
-
-#define RET_NOTHROW_ERR(action, default_return)                                                                        \
-  try {                                                                                                                \
-    if (!exception_thrown) {                                                                                           \
-      return action;                                                                                                   \
-    }                                                                                                                  \
-  } catch (...) {                                                                                                      \
-    exception_thrown = true;                                                                                           \
-  }                                                                                                                    \
-  if (*errptr == nullptr) {                                                                                            \
-    *errptr = strdup(EXCEPTION_THROWN_MESSAGE);                                                                        \
-  }                                                                                                                    \
-  return default_return;
 
 FFI_EXPORT leveldb_t *leveldb_ffi_open(const leveldb_options_t *options, const char *name, char **errptr) {
   RET_NOTHROW_ERR(leveldb_open(options, name, errptr), nullptr);

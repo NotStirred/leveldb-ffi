@@ -29,6 +29,7 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
 add_library(leveldb_ffi SHARED
         native/include/leveldb_ffi/c.h
+        native/include/leveldb_ffi/no_throw.h
         native/src/c.cc
 )
 set_target_properties(leveldb_ffi PROPERTIES LINKER_LANGUAGE C)
