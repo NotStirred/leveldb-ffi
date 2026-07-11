@@ -82,7 +82,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
             if (valSeg.address() == 0) {
                 return Optional.empty();
             }
-            valSeg = valSeg.reinterpret(valLenSeg.get(ValueLayout.JAVA_LONG, 0)); // TODO: , tempArena, c_h::leveldb_free);
+            valSeg = valSeg.reinterpret(valLenSeg.get(ValueLayout.JAVA_LONG, 0), tempArena, c_h::leveldb_ffi_free);
 
             throwErrorIfPresent(tempArena, errSeg);
 
