@@ -11,20 +11,19 @@ repositories {
     mavenCentral()
 }
 
-def cmakeLists = new File(projectDir, "CMakeLists.txt")
 def nativesBuildDir = layout.buildDirectory.dir("nativesBuild")
 tasks.register("configureNatives", Exec) {
     // Using FetchContent so the entire input is captured within CMakeLists
-    inputs.file(cmakeLists)
+    inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     outputs.dir(nativesBuildDir)
 
     commandLine "cmake", "-DCMAKE_BUILD_TYPE=Debug", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
 }
 tasks.register("buildNatives", Exec) {
     dependsOn(tasks.named("configureNatives"))
-    // not depending on configureNatives as the only time it changes is when CMakeLists does.
     // Using FetchContent so the entire input is captured within CMakeLists
-    inputs.file(cmakeLists)
+    inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
+    inputs.dir(layout.projectDirectory.dir("native"))
     outputs.file(layout.buildDirectory.file("nativesBuild/libleveldb_ffi.so"))
 
     commandLine "cmake", "--build", nativesBuildDir.get().asFile
