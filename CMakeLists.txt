@@ -6,6 +6,15 @@ if (UNIX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT lto_supported OUTPUT lto_error)
+if (lto_supported)
+    message(STATUS "LTO enabled.")
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else ()
+    message(WARNING "LTO is not supported by compiler: ${lto_error}")
+endif ()
+
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 set(ZLIB_BUILD_EXAMPLES OFF)
