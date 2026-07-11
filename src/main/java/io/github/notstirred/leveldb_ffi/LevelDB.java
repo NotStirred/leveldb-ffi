@@ -80,6 +80,7 @@ public class LevelDB extends Scoped implements AutoCloseable {
 
             MemorySegment valSeg = leveldb_ffi_get(this.seg, options.seg, keySeg, keySeg.byteSize(), valLenSeg, errSeg);
             if (valSeg.address() == 0) {
+                throwErrorIfPresent(tempArena, errSeg);
                 return Optional.empty();
             }
             valSeg = valSeg.reinterpret(valLenSeg.get(ValueLayout.JAVA_LONG, 0), tempArena, c_h::leveldb_ffi_free);
