@@ -22,6 +22,16 @@ tasks.named("clean") {
 }
 
 tasks.register("configureNatives", Exec) {
+    if (SystemInfo.OS == SystemInfo.OperatingSystem.UNKNOWN || SystemInfo.ARCH == SystemInfo.Architecture.UNKNOWN) {
+        throw new RuntimeException(String.format(
+                "Unknown hardware, OS: %s -> %s | Arch: %s -> %s",
+                System.getProperty("os.name", "?"),
+                SystemInfo.OS,
+                System.getProperty("os.arch", "?"),
+                SystemInfo.ARCH
+        ));
+    }
+
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     outputs.dir(nativesBuildDir)
