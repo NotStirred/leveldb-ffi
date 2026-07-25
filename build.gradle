@@ -34,14 +34,18 @@ tasks.register("buildNatives", Exec) {
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     inputs.dir(layout.projectDirectory.dir("native"))
-    outputs.file(layout.buildDirectory.file("nativesBuild/libleveldb_ffi.so"))
+
+    def libraryName = SystemInfo.OS.getLibraryName("leveldb_ffi")
+    outputs.file(layout.buildDirectory.file("nativesBuild/Debug/${libraryName}")) // windows specific
+    outputs.file(layout.buildDirectory.file("nativesBuild/Release/${libraryName}")) // windows specific
+    outputs.file(layout.buildDirectory.file("nativesBuild/${libraryName}"))
 
     commandLine "cmake", "--build", nativesBuildDir.get().asFile
 }
 
 def copyNativesTask = tasks.register("copyNatives", Copy) {
     from tasks.named("buildNatives")
-    into temporaryDir.toPath().resolve("io/github/notstirred/leveldb_ffi/natives/linux/x86_64/")
+    into temporaryDir.toPath().resolve("io/github/notstirred/leveldb_ffi/natives/${SystemInfo.OS.osName}/${SystemInfo.ARCH.archName}/")
 }
 
 jextract.libraries {
@@ -106,3 +110,97 @@ publishing {
     }
 }
 
+// Keep in sync with SystemInfo in the project
+public class SystemInfo {
+    public static final Architecture ARCH;
+    public static final OperatingSystem OS;
+
+    static {
+        String arch = System.getProperty("os.arch", "").toLowerCase().replaceAll("[^a-z0-9]+", "");
+        switch (arch) {
+            case "x64":
+            case "x86_64":
+            case "x8664":
+            case "amd64":
+            case "em64t":
+            case "universal":
+                ARCH = Architecture.x86_64;
+                break;
+            case "x86":
+            case "x86_32":
+            case "x8632":
+            case "x32":
+            case "i386":
+            case "i486":
+            case "i586":
+            case "i686":
+            case "pentium":
+                ARCH = Architecture.x86;
+                break;
+            case "arm":
+            case "arm32":
+                ARCH = Architecture.ARM;
+                break;
+            case "aarch64":
+                ARCH = Architecture.AARCH64;
+                break;
+            default:
+                ARCH = Architecture.UNKNOWN;
+        }
+
+        String osName = System.getProperty("os.name", "").toLowerCase();
+        if (osName.contains("linux")) {
+            OS = OperatingSystem.Linux;
+        } else if (osName.contains("freebsd")) {
+            OS = OperatingSystem.FreeBSD;
+        } else if (osName.contains("openbsd")) {
+            OS = OperatingSystem.OpenBSD;
+        } else if (osName.contains("netbsd")) {
+            OS = OperatingSystem.NetBSD;
+        } else if (osName.contains("windows")) {
+            OS = OperatingSystem.Windows;
+        } else if (osName.contains("mac os")) {
+            OS = OperatingSystem.MAC;
+        } else {
+            OS = OperatingSystem.UNKNOWN;
+        }
+    }
+
+    public enum OperatingSystem {
+        Linux("linux", "lib", ".so"),
+        FreeBSD("freebsd", "lib", ".so"),
+        OpenBSD("openbsd", "lib", ".so"),
+        NetBSD("netbsd", "lib", ".so"),
+        Windows("windows", "", ".dll"),
+        MAC("mac", "lib", ".dylib"),
+        UNKNOWN("UNKNOWN", "", "");
+
+        public final String osName;
+        public final String libPrefix;
+        public final String libSuffix;
+
+        OperatingSystem(String name, String libPrefix, String libSuffix) {
+            this.osName = name;
+            this.libPrefix = libPrefix;
+            this.libSuffix = libSuffix;
+        }
+
+        public String getLibraryName(String name) {
+            return this.libPrefix + name + this.libSuffix;
+        }
+    }
+
+    public enum Architecture {
+        x86("x86"),
+        x86_64("x86_64"),
+        ARM("arm"),
+        AARCH64("aarch64"),
+        UNKNOWN("UNKNOWN");
+
+        public final String archName;
+
+        Architecture(String name) {
+            this.archName = name;
+        }
+    }
+}

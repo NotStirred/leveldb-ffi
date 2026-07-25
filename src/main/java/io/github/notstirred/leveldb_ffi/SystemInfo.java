@@ -1,5 +1,6 @@
 package io.github.notstirred.leveldb_ffi;
 
+// Keep in sync with SystemInfo in the build.gradle
 public class SystemInfo {
     public static final Architecture ARCH;
     public static final OperatingSystem OS;
