@@ -60,7 +60,7 @@ public class SystemInfo {
         OpenBSD("openbsd", "lib", ".so"),
         NetBSD("netbsd", "lib", ".so"),
         Windows("windows", "", ".dll"),
-        MAC("mac", "", ".dylib"),
+        MAC("mac", "lib", ".dylib"),
         UNKNOWN("", "", "");
 
         public final String osName;
