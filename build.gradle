@@ -61,10 +61,7 @@ def copyNativesTask = tasks.register("copyNatives", Copy) {
 
 jextract.libraries {
     def levelDBBindings = register('levelDB') {
-        def buildDir = nativesBuildDir.get().asFile.toString()
         includes.add(layout.projectDirectory.dir("native/include"))
-        // don't like relying on unstable(?) cmake internals.
-        includes.add(layout.projectDirectory.dir("$buildDir/_deps/leveldb-src/include/"))
         header = layout.projectDirectory.file("native/include/leveldb_ffi/c.h")
         headerClassName = "c_h"
         targetPackage = "io.github.notstirred.leveldb_ffi.ffi"
@@ -72,9 +69,6 @@ jextract.libraries {
     sourceSets.main {
         jextract.libraries.addLater(levelDBBindings)
     }
-}
-tasks.named("generateLevelDBBindings") {
-    dependsOn(tasks.named("buildNatives"))
 }
 
 sourceSets {
