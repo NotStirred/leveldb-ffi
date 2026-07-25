@@ -36,7 +36,8 @@ tasks.register("configureNatives", Exec) {
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     outputs.dir(nativesBuildDir)
 
-    commandLine "cmake", "-DCMAKE_BUILD_TYPE=Debug", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
+    def buildType = System.getenv("BUILD_TYPE") ?: "Debug"
+    commandLine "cmake", "-DCMAKE_BUILD_TYPE=$buildType", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
 }
 tasks.register("buildNatives", Exec) {
     group = "build"
