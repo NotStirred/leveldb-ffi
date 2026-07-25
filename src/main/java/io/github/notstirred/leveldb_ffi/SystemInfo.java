@@ -5,11 +5,11 @@ public class SystemInfo {
     public static final OperatingSystem OS;
 
     static {
-
         String arch = System.getProperty("os.arch", "").toLowerCase().replaceAll("[^a-z0-9]+", "");
         switch (arch) {
             case "x64":
             case "x86_64":
+            case "x8664":
             case "amd64":
             case "em64t":
             case "universal":
@@ -17,6 +17,7 @@ public class SystemInfo {
                 break;
             case "x86":
             case "x86_32":
+            case "x8632":
             case "x32":
             case "i386":
             case "i486":
@@ -61,7 +62,7 @@ public class SystemInfo {
         NetBSD("netbsd", "lib", ".so"),
         Windows("windows", "", ".dll"),
         MAC("mac", "lib", ".dylib"),
-        UNKNOWN("", "", "");
+        UNKNOWN("UNKNOWN", "", "");
 
         public final String osName;
         public final String libPrefix;
@@ -83,7 +84,7 @@ public class SystemInfo {
         x86_64("x86_64"),
         ARM("arm"),
         AARCH64("aarch64"),
-        UNKNOWN("");
+        UNKNOWN("UNKNOWN");
 
         public final String archName;
 
