@@ -12,6 +12,15 @@ repositories {
 }
 
 def nativesBuildDir = layout.buildDirectory.dir("nativesBuild")
+
+tasks.register("cleanNatives", Delete) {
+    group = "build"
+    delete nativesBuildDir
+}
+tasks.named("clean") {
+    dependsOn(tasks.named("cleanNatives"))
+}
+
 tasks.register("configureNatives", Exec) {
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
@@ -20,6 +29,7 @@ tasks.register("configureNatives", Exec) {
     commandLine "cmake", "-DCMAKE_BUILD_TYPE=Debug", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
 }
 tasks.register("buildNatives", Exec) {
+    group = "build"
     dependsOn(tasks.named("configureNatives"))
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
