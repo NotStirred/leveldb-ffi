@@ -6,7 +6,7 @@ on:
       - "*"
 
 jobs:
-  build:
+  build-native:
     runs-on: ${{ matrix.conf.runner }}
     strategy:
       fail-fast: false
@@ -20,15 +20,7 @@ jobs:
           { name: "apple-x86-64",   runner: macos-15-intel,   jdk_version: 22 }
         ]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - uses: actions/checkout@v6
       - name: Set up git submodules
         run: git submodule init && git submodule update
       - name: Set up JDK
@@ -36,9 +28,41 @@ jobs:
         with:
           java-version: ${{ matrix.conf.jdk_version }}
           distribution: "temurin"
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Build natives
+        run: ./gradlew buildNativesForCI -PbuildType=Release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: leveldb-ffi-binary-${{ matrix.conf.name }}
+          path: build/nativeBuildForCI/*
+          if-no-files-found: 'error'
+
+  build-jar:
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 22
+          distribution: "temurin"
+      - name: Get built natives
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ github.workspace }}/nativesToBundle
+          pattern: leveldb-ffi-binary-*
+          merge-multiple: 'true'
+      - name: Build
+        run: ./gradlew build -PprovidedNatives=${{ github.workspace }}/nativesToBundle
       - uses: actions/upload-artifact@v4
         with:
-          name: leveldb-ffi-${{ matrix.conf.name }}.jar
+          name: leveldb-ffi-jars
           path: build/libs/*

@@ -13,6 +13,8 @@ repositories {
 
 def nativesBuildDir = layout.buildDirectory.dir("nativesBuild")
 
+def providedNatives = providers.gradleProperty("providedNatives")
+
 tasks.register("cleanNatives", Delete) {
     group = "build"
     delete nativesBuildDir
@@ -32,16 +34,20 @@ tasks.register("configureNatives", Exec) {
         ));
     }
 
+    var buildType = providers.gradleProperty("buildType")
+    inputs.property("buildType", buildType)
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     outputs.dir(nativesBuildDir)
 
-    def buildType = System.getenv("BUILD_TYPE") ?: "Debug"
-    commandLine "cmake", "-DCMAKE_BUILD_TYPE=$buildType", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
+    var type = buildType.getOrElse("Debug")
+    commandLine "cmake", "-DCMAKE_BUILD_TYPE=$type", "-S", "$projectDir", "-B", nativesBuildDir.get().asFile
 }
 tasks.register("buildNatives", Exec) {
     group = "build"
     dependsOn(tasks.named("configureNatives"))
+    var buildType = providers.gradleProperty("buildType")
+    inputs.property("buildType", buildType)
     // Using FetchContent so the entire input is captured within CMakeLists
     inputs.file(layout.projectDirectory.file("CMakeLists.txt"))
     inputs.dir(layout.projectDirectory.dir("native"))
@@ -59,6 +65,22 @@ def copyNativesTask = tasks.register("copyNatives", Copy) {
     into temporaryDir.toPath().resolve("io/github/notstirred/leveldb_ffi/natives/${SystemInfo.OS.osName}/${SystemInfo.ARCH.archName}/")
 }
 
+// Places binaries in a known directory structure so that CI can rely on it.
+tasks.register("buildNativesForCI", Copy) {
+    from tasks.named("buildNatives")
+    into layout.buildDirectory.dir("nativeBuildForCI/${SystemInfo.OS.osName}/${SystemInfo.ARCH.archName}/")
+}
+
+def copyProvidedNativesTask = tasks.register("copyProvidedNatives", Copy) {
+    inputs.property("providedNatives", providedNatives)
+
+    var natives = providedNatives.getOrElse("")
+    if (!natives.isEmpty()) {
+        from file(natives)
+        into temporaryDir.toPath().resolve("io/github/notstirred/leveldb_ffi/natives/")
+    }
+}
+
 jextract.libraries {
     def levelDBBindings = register('levelDB') {
         includes.add(layout.projectDirectory.dir("native/include"))
@@ -74,7 +96,11 @@ jextract.libraries {
 sourceSets {
     main {
         resources {
-            srcDir(copyNativesTask.map { it.temporaryDir })
+            if (providedNatives.getOrElse("").isEmpty()) { // build one for this platform
+                srcDir(copyNativesTask.map { it.temporaryDir })
+            } else { // use the provided binaries
+                srcDir(copyProvidedNativesTask.map { it.temporaryDir })
+            }
         }
     }
 }
