@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'org.jreleaser' version '1.25.0'
     id 'de.infolektuell.jextract' version '1.4.0'
 }
 
@@ -139,9 +140,21 @@ publishing {
                 password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
             }
         }
+        maven {
+            name = "MavenCentralSnapshot"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
+            credentials {
+                username = System.getenv("SONATYPE_USERNAME")
+                password = System.getenv("SONATYPE_TOKEN")
+            }
+        }
+        maven {
+            name = "Staging"
+            url = layout.buildDirectory.dir('staging-deploy')
+        }
     }
     publications {
-        gpr(MavenPublication) {
+        LevelDBFFI(MavenPublication) {
             groupId = group
             artifactId = rootProject.name
             version = version
@@ -149,6 +162,50 @@ publishing {
             artifact jar
             artifact sourcesJar
             artifact javadocJar
+
+            pom {
+                name = 'leveldb-ffi'
+                description = 'A Java wrapper for leveldb with zlib-raw'
+                url = 'https://github.com/NotStirred/leveldb-ffi'
+                inceptionYear = '2026'
+                licenses {
+                    license {
+                        name = 'Apache-2.0'
+                        url = 'https://spdx.org/licenses/Apache-2.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'NotStirred'
+                        name = 'Tom Martin'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/NotStirred/leveldb-ffi.git'
+                    developerConnection = 'scm:git:ssh://github.com/NotStirred/leveldb-ffi.git'
+                    url = 'http://github.com/NotStirred/leveldb-ffi'
+                }
+            }
+        }
+    }
+}
+
+jreleaser {
+    signing {
+        pgp {
+            active = 'ALWAYS'
+            armored = true
+        }
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                'release-deploy' {
+                    active = 'RELEASE'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository('build/staging-deploy')
+                }
+            }
         }
     }
 }

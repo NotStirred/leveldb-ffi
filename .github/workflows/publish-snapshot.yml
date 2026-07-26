@@ -1,9 +1,9 @@
-name: Publish RELEASE
+name: Publish SNAPSHOT
 
 on:
   push:
     branches:
-      - "stable"
+      - "dev"
 
 jobs:
   build-native:
@@ -36,7 +36,7 @@ jobs:
           path: build/nativeBuildForCI/*
           if-no-files-found: 'error'
 
-  publish-jar:
+  publish-snapshot-jar:
     needs: build-native
     runs-on: ubuntu-latest
     permissions:
@@ -74,28 +74,18 @@ jobs:
           echo "Publishing version: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: Incorrect version check
-        if: "endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
-        run: |
-          echo "Attempted to publish a SNAPSHOT build on the stable branch"
-          exit 1
-
-      - name: Publish to Maven Central
         if: "!endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
-        run: ./gradlew publishAllPublicationsToStagingRepository jreleaserDeploy --stacktrace -PprovidedNatives=${{ github.workspace }}/nativesToBundle
+        run: echo "Not attempting to publish a non-SNAPSHOT version on the dev branch"
+
+      - name: Publish to Maven Central (SNAPSHOT)
+        if: "endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
+        run: ./gradlew publishAllPublicationsToMavenCentralSnapshotRepository -PprovidedNatives=${{ github.workspace }}/nativesToBundle
         env:
-          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
-          JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          JRELEASER_MAVENCENTRAL_SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
-      - uses: actions/upload-artifact@v4
-        if: "always() && !endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
-        with:
-          name: jreleaser output
-          path: build/jreleaser/*
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
 
       - name: Publish to GitHub packages
-        if: "!endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
+        if: "endsWith(steps.extract_version.outputs.VERSION, '-SNAPSHOT')"
         run: ./gradlew publishAllPublicationsToGitHubPackagesRepository -PprovidedNatives=${{ github.workspace }}/nativesToBundle
         env:
           USERNAME: NotStirred
