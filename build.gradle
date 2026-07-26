@@ -116,6 +116,8 @@ java {
 
 tasks.named("sourcesJar", Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude("io/github/notstirred/leveldb_ffi/natives")
+    // resources are included in sources by default, we don't want that for our natives.
 }
 
 dependencies {
