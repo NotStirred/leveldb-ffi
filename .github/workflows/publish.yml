@@ -1,0 +1,73 @@
+name: Java CI
+
+on:
+  push:
+    branches:
+      - "stable"
+
+jobs:
+  build-native:
+    runs-on: ${{ matrix.conf.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        conf: [
+          { name: "linux-x86-64",   runner: ubuntu-latest,    jdk_version: 22 },
+          { name: "linux-arm64",    runner: ubuntu-24.04-arm, jdk_version: 22 },
+          { name: "windows-x86-64", runner: windows-latest,   jdk_version: 22 },
+          { name: "windows-arm64",  runner: windows-11-arm,   jdk_version: 23 }, # win-arm doesn't have a temurin 22 version
+          { name: "apple-arm64",    runner: macos-latest,     jdk_version: 22 },
+          { name: "apple-x86-64",   runner: macos-15-intel,   jdk_version: 22 }
+        ]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up git submodules
+        run: git submodule init && git submodule update
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ matrix.conf.jdk_version }}
+          distribution: "temurin"
+      - name: Build natives
+        run: ./gradlew buildNativesForCI -PbuildType=Release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: leveldb-ffi-binary-${{ matrix.conf.name }}
+          path: build/nativeBuildForCI/*
+          if-no-files-found: 'error'
+
+  publish-jar:
+    needs: build-native
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 22
+          distribution: "temurin"
+      - name: Get built natives
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ github.workspace }}/nativesToBundle
+          pattern: leveldb-ffi-binary-*
+          merge-multiple: 'true'
+      - name: Publish
+        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository -PprovidedNatives=${{ github.workspace }}/nativesToBundle
+        env:
+          USERNAME: NotStirred
+          TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: leveldb-ffi-jars
+          path: build/libs/*
