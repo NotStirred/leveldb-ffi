@@ -12,6 +12,11 @@ public class LevelDBLib {
             "leveldb_ffi",
     };
 
+    /**
+     * Must be called before interacting with anything else in leveldb-ffi
+     *
+     * @return Whether initialization was successful.
+     */
     public static boolean init() {
         if (attempted) {
             return is_success;
