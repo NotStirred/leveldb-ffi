@@ -68,3 +68,11 @@ elseif (APPLE)
 else () # Linux / GCC / Clang
     target_link_options(leveldb_ffi PUBLIC "SHELL:-Wl,--whole-archive $<TARGET_FILE:leveldb> -Wl,--no-whole-archive")
 endif ()
+
+message(STATUS "C++ Flags (Release): ${CMAKE_CXX_FLAGS_RELEASE}")
+message(STATUS "C++ Flags (Debug):   ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "C++ Flags:           ${CMAKE_CXX_FLAGS}")
+
+message(STATUS "C Flags (Release):   ${CMAKE_C_FLAGS_RELEASE}")
+message(STATUS "C Flags (Debug):     ${CMAKE_C_FLAGS_DEBUG}")
+message(STATUS "C Flags:             ${CMAKE_C_FLAGS}")
