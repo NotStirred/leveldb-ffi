@@ -58,7 +58,8 @@ tasks.register("buildNatives", Exec) {
     outputs.file(layout.buildDirectory.file("nativesBuild/Release/${libraryName}")) // windows specific
     outputs.file(layout.buildDirectory.file("nativesBuild/${libraryName}"))
 
-    commandLine "cmake", "--build", nativesBuildDir.get().asFile
+    var type = buildType.getOrElse("Debug")
+    commandLine "cmake", "--build", nativesBuildDir.get().asFile, "--config", "$type"
 }
 
 def copyNativesTask = tasks.register("copyNatives", Copy) {
